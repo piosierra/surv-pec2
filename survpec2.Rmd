@@ -1,0 +1,82 @@
+---
+title: "Análisis de Supervivencia PEC2"
+author: "Pío Sierra"
+date: "17/5/2020"
+output: html_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+if (!(require(survival)))
+  install.packages("survival")
+```
+
+Variable       |   Description                |     Codes / Values
+---------------|------------------------------|------------------------
+id             |   Identification Code        |     1 - 500
+age            |  Age at Hospital Admission   |    Years
+gender         |   Gender                     |     0 = Male, 1 = Female
+hr             |   Initial Heart Rate         |     Beats per minute
+sysbp          |   Initial Systolic Blood Pressure     |    mmHg
+diasbp         |   Initial Diastolic Blood Pressure   |     mmHg
+bmi            |   Body Mass Index             |    kg/m^2
+cvd            |   History of Cardiovascular Disease  |    0 = No, 1 = Yes
+afb            |   Atrial Fibrillation         |    0 = No, 1 = Yes
+sho             |  Cardiogenic Shock      |         0 = No, 1 = Yes
+chf            |   Congestive Heart Complications     |          0 = No, 1 = Yes
+av3            |   Complete Heart Block   |         0 = No, 1 = Yes
+miord          |   MI Order                |        0 = First, 1 = Recurrent
+mitype         |   MI Type                |         0 = non Q-wave, 1 = Q-wave
+year           |  Cohort Year             |        1 = 1997, 2 = 1999, 3 = 2001
+admitdate      |   Hospital Admission Date |        mm/dd/yyyy
+disdate        |   Hospital Discharge Date  |       mm/dd/yyyy
+fdate          |   Date of last Follow Up    |      mm/dd/yyyy
+los            |   Length of Hospital Stay   |      Days between Hospital Discharge and Hospital Admission
+dstat          |   Discharge Status fromHospital  |       0 = Alive, 1 = Dead
+lenfol         |   Total Length of Follow-up   |    Days between Date of Last Follow-up and Hospital Admission Date
+fstat          |   Vital Status at Last Follow-up     |      0 = Alive 1 = Dead
+                     
+***   
+
+# Lectura y preparación de datos
+
+```{r}
+data <- read.table("../Second-Edition Data/whas500.dat")
+colnames(data) <- c("id", "age", "gender", "hr", "sysbp", "diasbp", "bmi", "cvd", "afb", "sho", "chf", "av3", "miord", "mitype", "year", "admitdate", "disdate", "fdate", "los", "dstat", "lenfol", "fstat")
+# Miro la distribución de seguimiento y estatus final por cohorte.
+boxplot(lenfol ~ year, data = data)
+table(data$year,data$fstat)
+# Creamos una nueva columna con los datos de supervivencia en el formato adecuado.
+data$surv <- Surv(data$lenfol, data$fstat)
+```
+# a) Modelo HP
+
+```{r}
+# Creamos el modelo
+modelo <- coxph(surv ~ age + gender + age*gender, data = data)
+# Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales
+cox.zph(modelo, transform =  rank)
+```
+Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen las premisas de HP.
+
+A continuación vemos las curvas de supervivencia del modelo para 65 años para cada uno de los géneros.
+
+```{r}
+pattern<- data.frame(gender=1, age=65)
+plot(survfit(modelo,newdata=pattern))
+pattern<- data.frame(gender=0, age=65)
+plot(survfit(modelo,newdata=pattern))
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+
+
+
