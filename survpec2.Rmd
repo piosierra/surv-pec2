@@ -49,32 +49,45 @@ table(data$year,data$fstat)
 # Creamos una nueva columna con los datos de supervivencia en el formato adecuado.
 data$surv <- Surv(data$lenfol, data$fstat)
 ```
-# a) Modelo HP
+# Ejercicio a)
 
+Creamos la variable age_65, que es la edad centrada en 65 años y creamos el modelo con ella.
 ```{r}
+data$age_65 <- data$age - 65
 # Creamos el modelo
-modelo <- coxph(surv ~ age + gender + age*gender, data = data)
+modelo1 <- coxph(surv ~ age_65 + gender + age_65*gender, data = data)
 # Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales
-cox.zph(modelo, transform =  rank)
+cox.zph(modelo1, transform =  rank)
 ```
 Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen las premisas de HP.
 
-A continuación vemos las curvas de supervivencia del modelo para 65 años para cada uno de los géneros.
+
 
 ```{r}
-pattern<- data.frame(gender=1, age=65)
-plot(survfit(modelo,newdata=pattern))
-pattern<- data.frame(gender=0, age=65)
-plot(survfit(modelo,newdata=pattern))
+summary(modelo1)
+
+```
+Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HT}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es 41% mayor que la de un hombre.  
+
+# Ejercicio b)
+
+Aádimos ahora el tipo de IM, el orden de IM, la interacción tipo IM-orden IM, el ritmo cardíaco (centrado en 85 pulsaciones por minuto) y el indicador de complicaciones cardíacas.
+```{r}
+data$hr_85 <- data$hr - 85
+# Creamos el modelo
+modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype + miord + mitype*miord + hr_85 + chf, data = data)
+summary(modelo2)
 ```
 
 ```{r}
 ```
 
 ```{r}
-```
-
-```{r}
+#curvas de supervivencia
+# pattern<- data.frame(gender=1, age=65)
+# plot(survfit(modelo,newdata=pattern))
+# pattern<- data.frame(gender=0, age=65)
+# plot(survfit(modelo,newdata=pattern))
 ```
 
 
