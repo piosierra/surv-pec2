@@ -59,7 +59,7 @@ modelo1 <- coxph(surv ~ age_65 + gender + age_65*gender, data = data)
 # Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales
 cox.zph(modelo1, transform =  rank)
 ```
-Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen las premisas de HP.
+Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen la proporcionalidad.
 
 
 
@@ -67,7 +67,7 @@ Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo
 summary(modelo1)
 
 ```
-Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HT}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es 41% mayor que la de un hombre.  
+Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HR}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es un 41% mayor que la de un hombre. Tanto el Wald test como el resto de los p-valores son significativos, aunque como dato que puede dejar abierta la puerta a la duda el valor neutro (1) queda dentro del intervalo del 95% (si bien por muy poco).  
 
 # Ejercicio b)
 
@@ -77,10 +77,33 @@ data$hr_85 <- data$hr - 85
 # Creamos el modelo
 modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype + miord + mitype*miord + hr_85 + chf, data = data)
 summary(modelo2)
+### Falta meter el pattern para ver la basal -> ver foro
+# pattern <- data.frame()
+plot(survfit(modelo2))
 ```
 
+# Ejercicio c)  
+
+Representamos la función de supervivencia estimada para el modelo del apartado
+anterior, para cada tipo IM y orden IM (cuatro posibilidades). 
+
+
 ```{r}
+par(2,2)
+pattern<- data.frame(miord=0, mitype=0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=0")
+pattern<- data.frame(miord=0, mitype=1)
+plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=1")
+pattern<- data.frame(miord=1, mitype=0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=0")
+pattern<- data.frame(miord=1, mitype=1)
+plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=1")
+
 ```
+
+
+# Ejercicio d)
+
 
 ```{r}
 #curvas de supervivencia
