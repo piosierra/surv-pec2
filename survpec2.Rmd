@@ -2,7 +2,9 @@
 title: "Análisis de Supervivencia PEC2"
 author: "Pío Sierra"
 date: "17/5/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r}
@@ -59,7 +61,7 @@ modelo1 <- coxph(surv ~ age_65 + gender + age_65*gender, data = data)
 # Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales
 cox.zph(modelo1, transform =  rank)
 ```
-Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen la proporcionalidad.
+Ninguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen la proporcionalidad.
 
 
 
@@ -67,19 +69,22 @@ Niguno de los valores de p es significativo, tampoco para todo el modelo, por lo
 summary(modelo1)
 
 ```
-Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HR}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es un 41% mayor que la de un hombre. Tanto el Wald test como el resto de los p-valores son significativos, aunque como dato que puede dejar abierta la puerta a la duda el valor neutro (1) queda dentro del intervalo del 95% (si bien por muy poco).  
+Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HR}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es un 41% mayor que la de un hombre. Tanto el test de Wald como el resto de los p-valores son significativos, aunque como dato que puede dejar abierta la puerta a la duda el valor neutro (1) queda dentro del intervalo del 95% (si bien por muy poco).  
 
 # Ejercicio b)
 
-Aádimos ahora el tipo de IM, el orden de IM, la interacción tipo IM-orden IM, el ritmo cardíaco (centrado en 85 pulsaciones por minuto) y el indicador de complicaciones cardíacas.
+Añadimos ahora el tipo de IM, el orden de IM, la interacción tipo IM-orden IM, el ritmo cardíaco (centrado en 85 pulsaciones por minuto) y el indicador de complicaciones cardíacas.
 ```{r}
 data$hr_85 <- data$hr - 85
 # Creamos el modelo
 modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype + miord + mitype*miord + hr_85 + chf, data = data)
 summary(modelo2)
-### Falta meter el pattern para ver la basal -> ver foro
-# pattern <- data.frame()
-plot(survfit(modelo2))
+# Representamos la función de supervivencia basal.
+pattern <- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+head(summary(survfit(modelo2, newdata=pattern)))
+tail(summary(survfit(modelo2, newdata=pattern)))
+plot(survfit(modelo2, newdata=pattern), main = "Curva de superviviencia ajustada para:\n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
+
 ```
 
 # Ejercicio c)  
@@ -89,30 +94,106 @@ anterior, para cada tipo IM y orden IM (cuatro posibilidades).
 
 
 ```{r}
-par(2,2)
-pattern<- data.frame(miord=0, mitype=0)
+par(mfrow=c(2,2))
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=0")
-pattern<- data.frame(miord=0, mitype=1)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=1")
-pattern<- data.frame(miord=1, mitype=0)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=0")
-pattern<- data.frame(miord=1, mitype=1)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=1")
 
 ```
+Vemos que los casos de ingreso recurrente tienen un peor índice de supervivencia en general. Y que el peor caso, aunque con la mayor variabilidad, lo tenemos en los casos con Q-wave e ingreso recurrente. Resulta un poco sorprendente que la supervivencia de primeros ingresos con Q-wave sea mayor que la de los que no presentan esta patología.
 
+```{r}
+length(data[which(data$miord==1 & data$mitype==1),])
+```
+Comprobamos el número de casos de ingreso reincidente y Q-wave y vemos que son pocos, lo que sin duda tendrá un efecto en la variabilidad de esa combinación. 
 
 # Ejercicio d)
 
+Para calcular la mediana trazamos una línea horizontal en $\hat{S}(t)=0,5$ y para ver la probabilidad de supervivencia a 1 año una vertical en $t=365$.
 
 ```{r}
-#curvas de supervivencia
-# pattern<- data.frame(gender=1, age=65)
-# plot(survfit(modelo,newdata=pattern))
-# pattern<- data.frame(gender=0, age=65)
-# plot(survfit(modelo,newdata=pattern))
+
+par(mfrow=c(2,2))
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=0")
+abline(0.5,0, col = "blue")
+abline(v = 365, col = "green")
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=1")
+abline(0.5,0, col = "blue")
+abline(v = 365, col = "green")
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=0")
+abline(0.5,0, col = "blue")
+abline(v = 365, col = "green")
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
+plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=1")
+abline(0.5,0, col = "blue")
+abline(v = 365, col = "green")
+
 ```
 
+#### data.cp365 <- survSplit(data,cut=365,end="lenfol", event="fstat",start="start")
 
 
+Vemos que en todos los casos la mediana está por encima de los valores controlados, es decir, más del 50% de los pacientes sobreviven más tiempo del que tenemos en el análisis. Por otro lado vemos que en todos los casos la supervivencia en al primer año es mayor del 85%.  
+Vamos ahora a obtener los valores exactos para cada caso. 
+```{r}
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+print("Con mitype = 0, miord = 0")
+survfit(modelo2, newdata=pattern)
+summary(survfit(modelo2, newdata=pattern),times=365)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
+print("Con mitype = 1, miord = 0")
+survfit(modelo2, newdata=pattern)
+summary(survfit(modelo2, newdata=pattern),times=365)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
+print("Con mitype = 0, miord = 1")
+survfit(modelo2, newdata=pattern)
+summary(survfit(modelo2, newdata=pattern),times=365)
+pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
+print("Con mitype = 1, miord = 1")
+survfit(modelo2, newdata=pattern)
+summary(survfit(modelo2, newdata=pattern),times=365)
 
+```
+Comporbamos que el valor de la mediana es el mismo en todos y coindice con el límite de eventos observados.  
+
+## Ejercicio e)
+
+Volvemos a examinar el modelo.
+
+```{r}
+summary(modelo2)
+```
+Solo son significativas las variables `age_65`,`hr_85` y `chf`. La variable `gender` no es significativa por sí misma, pero sí en su interacción con `age`, así que también la mantenemos.  
+El nuevo modelo quedaría así.
+
+```{r}
+modelo3 <- coxph(surv ~ age_65 + gender + age_65*gender + hr_85 + chf, data = data)
+summary(modelo3)
+```
+## Ejercicio f)
+
+Primero utilizamos el método gráfico para las variables que son un factor, y comprobamos si cada una de las variables mantienen unas curvas razonablemente paralelas.
+
+```{r}
+plot(survfit(surv ~ chf, data= data),fun="cloglog",col=c("blue","red"),
+     xlab="time in days using logarithmic scale",ylab="log-log survival", 
+     main="log-log curves by chf")
+legend("topright", c("chf 0","chf 1"),col=c("blue","red"), lty="solid")
+plot(survfit(surv ~ gender, data=data),fun="cloglog",col=c("blue","red"),
+     xlab="time in days using logarithmic scale",ylab="log-log survival", 
+     main="log-log curves by gender")
+legend("topright", c("gender 0","Gender 1"),col=c("blue","red"), lty="solid")
+
+```
+Segundo utilizamos un test GOF.
+
+
+Tercero comprobamos la signifiación de los productos con el tiempo.
