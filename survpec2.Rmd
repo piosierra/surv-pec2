@@ -45,6 +45,7 @@ fstat          |   Vital Status at Last Follow-up     |      0 = Alive 1 = Dead
 ```{r}
 data <- read.table("../Second-Edition Data/whas500.dat")
 colnames(data) <- c("id", "age", "gender", "hr", "sysbp", "diasbp", "bmi", "cvd", "afb", "sho", "chf", "av3", "miord", "mitype", "year", "admitdate", "disdate", "fdate", "los", "dstat", "lenfol", "fstat")
+
 # Miro la distribución de seguimiento y estatus final por cohorte.
 boxplot(lenfol ~ year, data = data)
 table(data$year,data$fstat)
@@ -80,7 +81,7 @@ data$hr_85 <- data$hr - 85
 modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype + miord + mitype*miord + hr_85 + chf, data = data)
 summary(modelo2)
 # Representamos la función de supervivencia basal.
-pattern <- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+pattern <- data.frame(age_65=0, gender = 0, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
 head(summary(survfit(modelo2, newdata=pattern)))
 tail(summary(survfit(modelo2, newdata=pattern)))
 plot(survfit(modelo2, newdata=pattern), main = "Curva de superviviencia ajustada para:\n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
@@ -95,13 +96,13 @@ anterior, para cada tipo IM y orden IM (cuatro posibilidades).
 
 ```{r}
 par(mfrow=c(2,2))
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=0")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =0, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=1")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =1, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=0")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =1, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=1")
 
 ```
@@ -119,19 +120,19 @@ Para calcular la mediana trazamos una línea horizontal en $\hat{S}(t)=0,5$ y pa
 ```{r}
 
 par(mfrow=c(2,2))
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=0")
 abline(0.5,0, col = "blue")
 abline(v = 365, col = "green")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =0, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=0, mitype=1")
 abline(0.5,0, col = "blue")
 abline(v = 365, col = "green")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =1, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=0")
 abline(0.5,0, col = "blue")
 abline(v = 365, col = "green")
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =1, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), main = "miord=1, mitype=1")
 abline(0.5,0, col = "blue")
 abline(v = 365, col = "green")
@@ -144,25 +145,25 @@ abline(v = 365, col = "green")
 Vemos que en todos los casos la mediana está por encima de los valores controlados, es decir, más del 50% de los pacientes sobreviven más tiempo del que tenemos en el análisis. Por otro lado vemos que en todos los casos la supervivencia en al primer año es mayor del 85%.  
 Vamos ahora a obtener los valores exactos para cada caso. 
 ```{r}
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
 print("Con mitype = 0, miord = 0")
 survfit(modelo2, newdata=pattern)
 summary(survfit(modelo2, newdata=pattern),times=365)
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 0, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =0, hr_85 = 0, chf =0)
 print("Con mitype = 1, miord = 0")
 survfit(modelo2, newdata=pattern)
 summary(survfit(modelo2, newdata=pattern),times=365)
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 0, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =1, hr_85 = 0, chf =0)
 print("Con mitype = 0, miord = 1")
 survfit(modelo2, newdata=pattern)
 summary(survfit(modelo2, newdata=pattern),times=365)
-pattern<- data.frame(age_65=0, gender = 0.5, mitype = 1, miord = 1, hr_85 = 0, chf = 0)
+pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =1, hr_85 = 0, chf =0)
 print("Con mitype = 1, miord = 1")
 survfit(modelo2, newdata=pattern)
 summary(survfit(modelo2, newdata=pattern),times=365)
 
 ```
-Comporbamos que el valor de la mediana es el mismo en todos y coindice con el límite de eventos observados.  
+Comprobamos que el valor de la mediana es el mismo en todos y coincide con el límite de eventos observados.  
 
 ## Ejercicio e)
 
@@ -180,6 +181,9 @@ summary(modelo3)
 ```
 ## Ejercicio f)
 
+
+### Método gráfico.  
+
 Primero utilizamos el método gráfico para las variables que son un factor, y comprobamos si cada una de las variables mantienen unas curvas razonablemente paralelas.
 
 ```{r}
@@ -193,7 +197,51 @@ plot(survfit(surv ~ gender, data=data),fun="cloglog",col=c("blue","red"),
 legend("topright", c("gender 0","Gender 1"),col=c("blue","red"), lty="solid")
 
 ```
+En el caso del sexo las líneas parecen paralelas por lo que en una primera aproximación podemos concluir que cumple con la hipótesis de riesgos proporcionales, sin embargo esto no está tan claro para chf. Veamos qué nos dicen el resto de comprobaciones.  
+
+
+### Test GOF.    
+
 Segundo utilizamos un test GOF.
 
+```{r}
+cox.zph(modelo3)
+cox.zph(modelo3,transform=rank)
 
-Tercero comprobamos la signifiación de los productos con el tiempo.
+```
+Podemos ver que ninguna de las correlaciones tiene un valor significativo de p, por lo que en principio podemos suponer que todas cumplen con la hipótesis de riesgos proporcionales.  
+
+### 
+Tercero comprobamos la significación de los productos con el tiempo.
+
+```{r}
+data.cp=survSplit(data,cut=data$lenfol[data$dstat==1], end="lenfol", event="dstat",start="start")
+data.cp$logtgender=(data.cp$gender+1)*log(data.cp$lenfol)
+coxph(Surv(data.cp$start,data.cp$lenfol,data.cp$fstat) ~ age_65 + gender + logtgender + hr_85 + chf, cluster(id),data=data.cp)
+
+```
+El test de Wald es significativo para logtgender, por lo que no podemos rechazar la hipótesis de que el modelo mejora con esa variable y por tanto hay una relación entre el género y el tiempo, lo que hace que la variable género no cumpla con la hipótesis de riesgos proporcionales.
+
+```{r}
+data.cp$logtchf=(data.cp$chf+1)*log(data.cp$lenfol)
+coxph(Surv(data.cp$start,data.cp$lenfol,data.cp$fstat) ~ age_65 + gender + logtchf + hr_85 + chf, cluster(id),data=data.cp)
+
+```
+Vemos que con `chf` ocurre lo mismo que con `gender`.
+
+
+Creamos una función que nos permita hacer el test entre dos modelos.
+```{r}
+lrt.surv=function(mod.full,mod.reduced,df) {
+lrts=(-2)*(mod.full$loglik[2]- mod.reduced$loglik[2])
+pvalue=1-pchisq(lrts,df)
+return(pvalue)
+}
+```
+Y ahora la utilizamos para realizar las distintas comparaciones. 
+```{r}
+modelo3 <- coxph(surv ~ age_65 + gender + age_65*gender + hr_85 + chf, data = data)
+modelo4 <- coxph(surv ~ age_65 + gender + hr_85 + chf, data = data)
+lrt.surv(modelo3,modelo4,2)
+```
+
