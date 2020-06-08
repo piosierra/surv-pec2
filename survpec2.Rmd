@@ -8,10 +8,17 @@ output:
 ---
 
 ```{r}
-knitr::opts_chunk$set(echo = TRUE)
 if (!(require(survival)))
   install.packages("survival")
 ```
+
+# Lectura y preparación de datos
+
+Procedemos a leer los datos del archivo proporcionado y damos a las columnas los nombres apropiados.
+
+***  
+  
+
 
 Variable       |   Description                |     Codes / Values
 ---------------|------------------------------|------------------------
@@ -40,51 +47,67 @@ fstat          |   Vital Status at Last Follow-up     |      0 = Alive 1 = Dead
                      
 ***   
 
-# Lectura y preparación de datos
-
 ```{r}
 data <- read.table("../Second-Edition Data/whas500.dat")
-colnames(data) <- c("id", "age", "gender", "hr", "sysbp", "diasbp", "bmi", "cvd", "afb", "sho", "chf", "av3", "miord", "mitype", "year", "admitdate", "disdate", "fdate", "los", "dstat", "lenfol", "fstat")
+colnames(data) <- c("id", "age", "gender", "hr", "sysbp", "diasbp", "bmi", "cvd",
+                    "afb", "sho", "chf", "av3", "miord", "mitype", "year", 
+                    "admitdate", "disdate", "fdate", "los", "dstat", "lenfol", "fstat")
+```
 
-# Miro la distribución de seguimiento y estatus final por cohorte.
+Comprobamos la la distribución de seguimiento y estatus final por cohorte.
+```{r}
 boxplot(lenfol ~ year, data = data)
 table(data$year,data$fstat)
-# Creamos una nueva columna con los datos de supervivencia en el formato adecuado.
+```
+
+Creamos una nueva columna con los datos de supervivencia en el formato adecuado.
+```{r}
 data$surv <- Surv(data$lenfol, data$fstat)
 ```
+
+
 # Ejercicio a)
 
-Creamos la variable age_65, que es la edad centrada en 65 años y creamos el modelo con ella.
+Creamos la variable age_65, que es la edad centrada en 65 años y creamos el modelo con ella.  
 ```{r}
 data$age_65 <- data$age - 65
 # Creamos el modelo
 modelo1 <- coxph(surv ~ age_65 + gender + age_65*gender, data = data)
-# Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales
+
+```
+
+Y comprobamos si todas las variables cumplen con la premisa de riesgos proporcionales.  
+```{r}
+
 cox.zph(modelo1, transform =  rank)
 ```
-Ninguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen la proporcionalidad.
 
+Ninguno de los valores de p es significativo, tampoco para todo el modelo, por lo que no podemos rechazar la hipótesis de que todas las variables, y el modelo completo, cumplen la proporcionalidad.
 
 
 ```{r}
 summary(modelo1)
 
 ```
-Como la edad está codificada como (1,0) el riesgo relativo será $\hat{HR}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es un 41% mayor que la de un hombre. Tanto el test de Wald como el resto de los p-valores son significativos, aunque como dato que puede dejar abierta la puerta a la duda el valor neutro (1) queda dentro del intervalo del 95% (si bien por muy poco).  
+Como el género está codificado como (1,0) el riesgo relativo será $\hat{HR}=e^{\hat{\beta}_1} = 1.421$ con un intervalo para el 95% $(0.9280, 2.1748)$. Según estos datos, la probabilidad de que una mujer muera tras un infarto es un 41% mayor que la de un hombre. Tanto el test de Wald como el resto de los p-valores son significativos, aunque como dato que puede dejar abierta la puerta a la duda el valor neutro (1) queda dentro del intervalo del 95% (si bien por muy poco).  
 
 # Ejercicio b)
 
-Añadimos ahora el tipo de IM, el orden de IM, la interacción tipo IM-orden IM, el ritmo cardíaco (centrado en 85 pulsaciones por minuto) y el indicador de complicaciones cardíacas.
+Añadimos ahora el tipo de IM, el orden de IM, la interacción tipo IM-orden IM, el ritmo cardíaco (centrado en 85 pulsaciones por minuto) y el indicador de complicaciones cardíacas.  
+Creamos el modelo.  
 ```{r}
 data$hr_85 <- data$hr - 85
-# Creamos el modelo
-modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype + miord + mitype*miord + hr_85 + chf, data = data)
+modelo2 <- coxph(surv ~ age_65 + gender + age_65*gender + mitype 
+                 + miord + mitype*miord + hr_85 + chf, data = data)
 summary(modelo2)
-# Representamos la función de supervivencia basal.
+```
+
+Representamos la función de supervivencia basal.
+```{r}
 pattern <- data.frame(age_65=0, gender = 0, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
-head(summary(survfit(modelo2, newdata=pattern)))
-tail(summary(survfit(modelo2, newdata=pattern)))
-plot(survfit(modelo2, newdata=pattern), xlab = "Curva de superviviencia ajustada para:\n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
+plot(survfit(modelo2, newdata=pattern), 
+     xlab = "Curva de superviviencia ajustada para:\n age_65 = 0, 
+     gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
 
 ```
 
@@ -94,7 +117,7 @@ Representamos la función de supervivencia estimada para el modelo del apartado
 anterior, para cada tipo IM y orden IM (cuatro posibilidades). 
 
 
-```{r}
+```{r fig.height=7}
 par(mfrow=c(2,2))
 pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
 plot(survfit(modelo2, newdata=pattern), xlab = "miord=0, mitype=0")
@@ -106,18 +129,20 @@ pattern<- data.frame(age_65=0, gender = 0, mitype =1, miord =1, hr_85 = 0, chf =
 plot(survfit(modelo2, newdata=pattern), xlab = "miord=1, mitype=1")
 
 ```
+
 Vemos que los casos de ingreso recurrente tienen un peor índice de supervivencia en general. Y que el peor caso, aunque con la mayor variabilidad, lo tenemos en los casos con Q-wave e ingreso recurrente. Resulta un poco sorprendente que la supervivencia de primeros ingresos con Q-wave sea mayor que la de los que no presentan esta patología.
 
 ```{r}
 length(data[which(data$miord==1 & data$mitype==1),])
 ```
+
 Comprobamos el número de casos de ingreso reincidente y Q-wave y vemos que son pocos, lo que sin duda tendrá un efecto en la variabilidad de esa combinación. 
 
 # Ejercicio d)
 
 Para calcular la mediana trazamos una línea horizontal en $\hat{S}(t)=0,5$ y para ver la probabilidad de supervivencia a 1 año una vertical en $t=365$.
 
-```{r}
+```{r fig.height=7}
 
 par(mfrow=c(2,2))
 pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
@@ -139,11 +164,10 @@ abline(v = 365, col = "green")
 
 ```
 
-#### data.cp365 <- survSplit(data,cut=365,end="lenfol", event="fstat",start="start")
-
-
 Vemos que en todos los casos la mediana está por encima de los valores controlados, es decir, más del 50% de los pacientes sobreviven más tiempo del que tenemos en el análisis. Por otro lado vemos que en todos los casos la supervivencia en al primer año es mayor del 85%.  
-Vamos ahora a obtener los valores exactos para cada caso. 
+
+Vamos ahora a obtener los valores exactos para cada caso.  
+
 ```{r}
 pattern<- data.frame(age_65=0, gender = 0, mitype =0, miord =0, hr_85 = 0, chf =0)
 print("Con mitype = 0, miord = 0")
@@ -165,44 +189,44 @@ summary(survfit(modelo2, newdata=pattern),times=365)
 ```
 Comprobamos que el valor de la mediana es el mismo en todos y coincide con el límite de eventos observados.  
 
-## Ejercicio e)
+# Ejercicio e)
 
 Volvemos a examinar el modelo.
 
 ```{r}
 summary(modelo2)
 ```
-Solo son significativas las variables `age_65`,`hr_85` y `chf`. La variable `gender` no es significativa por sí misma, pero sí en su interacción con `age`, así que también la mantenemos.  
-El nuevo modelo quedaría así.
+Solo son significativas las variables `age_65`,`hr_85` y `chf`. La variable `gender` no es significativa por sí misma, pero sí en su interacción con `age`, así que también la mantenemos.    
+El nuevo modelo quedaría así.  
 
 ```{r}
 modelo3 <- coxph(surv ~ age_65 + gender + age_65*gender + hr_85 + chf, data = data)
 summary(modelo3)
 ```
-## Ejercicio f)
+# Ejercicio f)
 
 
-### Método gráfico.  
+## Método gráfico.  
 
-Primero utilizamos el método gráfico para las variables que son un factor, y comprobamos si cada una de las variables mantienen unas curvas razonablemente paralelas.
+Primero utilizamos el método gráfico para las variables que son un factor, y comprobamos si cada una de las variables mantienen unas curvas razonablemente paralelas.  
 
 ```{r}
 plot(survfit(surv ~ chf, data= data),fun="cloglog",col=c("blue","red"),
      xlab="time in days using logarithmic scale",ylab="log-log survival", 
      main="log-log curves by chf")
-legend("topright", c("chf 0","chf 1"),col=c("blue","red"), lty="solid")
+legend("bottomright", c("chf 0","chf 1"),col=c("blue","red"), lty="solid")
 plot(survfit(surv ~ gender, data=data),fun="cloglog",col=c("blue","red"),
      xlab="time in days using logarithmic scale",ylab="log-log survival", 
      main="log-log curves by gender")
-legend("topright", c("gender 0","Gender 1"),col=c("blue","red"), lty="solid")
+legend("bottomright", c("gender 0","Gender 1"),col=c("blue","red"), lty="solid")
 
 ```
-En el caso del sexo las líneas parecen paralelas por lo que en una primera aproximación podemos concluir que cumple con la hipótesis de riesgos proporcionales, sin embargo esto no está tan claro para chf. Veamos qué nos dicen el resto de comprobaciones.  
+En el caso del sexo las líneas parecen paralelas por lo que en una primera aproximación podemos concluir que cumple con la hipótesis de riesgos proporcionales, sin embargo esto no está tan claro para `chf`. Veamos qué nos dicen el resto de comprobaciones.  
 
 
-### Test GOF.    
+## Test GOF.    
 
-Segundo utilizamos un test GOF.
+Segundo, utilizamos un test GOF.
 
 ```{r}
 cox.zph(modelo3)
@@ -211,16 +235,21 @@ cox.zph(modelo3,transform=rank)
 ```
 Podemos ver que ninguna de las correlaciones tiene un valor significativo de p, por lo que en principio podemos suponer que todas cumplen con la hipótesis de riesgos proporcionales.  
 
-### 
-Tercero comprobamos la significación de los productos con el tiempo.
+## Comprobar la interacción con el tiempo.  
+
+
+Tercero, comprobamos la significación de los productos con el tiempo.     
 
 ```{r}
-data.cp=survSplit(data,cut=data$lenfol[data$dstat==1], end="lenfol", event="dstat",start="start")
+data.cp=survSplit(data,cut=data$lenfol[data$dstat==1], end="lenfol", 
+                  event="dstat",start="start")
 data.cp$logtgender=(data.cp$gender+1)*log(data.cp$lenfol)
-coxph(Surv(data.cp$start,data.cp$lenfol,data.cp$fstat) ~ age_65 + gender + logtgender + hr_85 + chf, cluster(id),data=data.cp)
+coxph(Surv(data.cp$start,data.cp$lenfol,data.cp$fstat) ~ age_65 + gender + 
+        logtgender + hr_85 + chf, cluster(id),data=data.cp)
 
 ```
-El test de Wald es significativo para logtgender, por lo que no podemos rechazar la hipótesis de que el modelo mejora con esa variable y por tanto hay una relación entre el género y el tiempo, lo que hace que la variable género no cumpla con la hipótesis de riesgos proporcionales.
+
+El test de Wald es significativo para `logtgender`, por lo que no podemos rechazar la hipótesis de que el modelo mejora con esa variable y por tanto hay una relación entre el género y el tiempo, lo que hace que la variable género no cumpla con la hipótesis de riesgos proporcionales.
 
 ```{r}
 data.cp$logtchf=(data.cp$chf+1)*log(data.cp$lenfol)
@@ -231,7 +260,7 @@ Vemos que con `chf` ocurre lo mismo que con `gender`.
 
 Con los distintos sistemas obtengo distintos resultados, según unos las variables cumplen con la hipótesis de proporcionalidad, pero según otros no. 
 
-## Ejercicio g)
+# Ejercicio g)
 
 Creo una función para hacer comparaciones entre modelos completos y reducidos, y otra para calcular el AIC del modelo.
 
@@ -252,17 +281,23 @@ aic.surv <- function(mod) {
 Primero comprobamos con la variable `gender` de forma visual si la propiedad se cumple de que existe una relación lineal entre log-log de la curva de supervivencia y log del tiempo. 
 
 ```{r}
-plot(survfit(data$surv ~ data$gender), fun="cloglog",xlab="time in days using log-
-arithmic scale",ylab="log-log survival", main="log-log curves by gender")
+plot(survfit(data$surv ~ data$gender), fun="cloglog", col=c("blue","red"),
+    xlab="time in days using logarithmic scale",
+    ylab="log-log survival", main="log-log curves by gender")
+legend("bottomright", c("gender 0","Gender 1"),col=c("blue","red"), lty="solid")
 ```
+
 Vemos que se cumple, pero que tiene una pendiente distinta de 1, por lo que seguramente sea mejor el caso Weibull general que una exponencial. Creo tres modelos y compruebo cual parece el más adecuado según AIC.
 
 ```{r}
-modpar1=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  data=data,dist="exponential")
+modpar1=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  
+                data=data,dist="exponential")
 summary(modpar1)
-modpar2=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  data=data,dist="weibull")
+modpar2=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  
+                data=data,dist="weibull")
 summary(modpar1)
-modpar3=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  data=data,dist="loglogistic")
+modpar3=survreg(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  
+                data=data,dist="loglogistic")
 summary(modpar1)
 
 aic.surv(modpar1)
@@ -273,65 +308,93 @@ aic.surv(modpar3)
 Con el valor más bajo de AIC, 3286.075, confirmamos que el modelo de Weibull es el más adecuado para este caso. Seguimos a partir de ahora trabajando con él.  
 
 
-## Ejercicio h)
-
-
+# Ejercicio h)
 
 Añado interacciones de primer orden. al modelo anterior y compruebo con LRT si son significativas y aportan algo al modelo.  
 
 ```{r}
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + gender*age_65, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi +
+                  gender*age_65, data=data,dist="weibull")
 print(paste("gender*age_65: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + bmi*age_65, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi +
+                  bmi*age_65, data=data,dist="weibull")
 print(paste("bmi*age_65: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + diasbp*age_65, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  diasbp*age_65, data=data,dist="weibull")
 print(paste("diasbp*age_65: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + chf*age_65, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  chf*age_65, data=data,dist="weibull")
 print(paste("chf*age_65: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + hr_85*age_65, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  hr_85*age_65, data=data,dist="weibull")
 print(paste("hr_85*age_65: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + gender*hr_85, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  gender*hr_85, data=data,dist="weibull")
 print(paste("gender*hr_85: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + bmi*hr_85, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  bmi*hr_85, data=data,dist="weibull")
 print(paste("bmi*hr_85: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + diasbp*hr_85, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  diasbp*hr_85, data=data,dist="weibull")
 print(paste("diasbp*hr_85: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + chf*hr_85, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  chf*hr_85, data=data,dist="weibull")
 print(paste("chf*hr_85: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + gender*chf, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  gender*chf, data=data,dist="weibull")
 print(paste("gender*chf: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + chf*diasbp, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  chf*diasbp, data=data,dist="weibull")
 print(paste("chf*diasbp: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + chf*bmi, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  chf*bmi, data=data,dist="weibull")
 print(paste("chf*bmi: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + gender*bmi, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  gender*bmi, data=data,dist="weibull")
 print(paste("gender*bmi: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + diasbp*bmi, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  diasbp*bmi, data=data,dist="weibull")
 print(paste("bmi*diasbp: ", lrt.surv(modpar1,modpar2, 6)))
-modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   data=data,dist="weibull")
-modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + gender*diasbp, data=data,dist="weibull")
+modpar1=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi,   
+                data=data,dist="weibull")
+modpar2=survreg(surv ~  gender + age_65 + hr_85 + chf + diasbp + bmi + 
+                  gender*diasbp, data=data,dist="weibull")
 print(paste("gender*diasbp: ", lrt.surv(modpar1,modpar2, 6)))
 
 ```
 Vemos que el test LRT no devuelve ningún valor significativo para ninguna de las interacciones. La que hay entre la edad y el genero está cerca, pero no llega a ser significativa. Por tanto en principio podemos descartarlas todas.  
 
-## Ejercicio i)
+# Ejercicio i)
 
-Creamos el modelo de Cox con las variables de g)
+Creamos el modelo de Cox con las variables del ejercicio g)
 
 ```{r}
 modcox=coxph(surv ~ gender + age_65 + hr_85 + chf + diasbp + bmi,  data=data)
@@ -341,14 +404,18 @@ Y ahora comparamos gráficamente este con el modelo de Weibull obtenido anterior
 
 ```{r}
 pattern <- data.frame(age_65=0, gender = 0, chf = 0, diasbp = 0, hr_85 = 0, chf = 0, bmi =0)
-plot(survfit(modcox, newdata=pattern), xlab = "Curva de superviviencia del modelo de Cox ajustada para:\n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
+plot(survfit(modcox, newdata=pattern), 
+     xlab = "Curva de superviviencia del modelo de Cox ajustada para:
+     \n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
 
 pct2=0:100/100
 days2=predict(modpar2,newdata=pattern, type="quantile",p=pct2)
 survival=1-pct2
-plot(days2,survival,xlab="Curva de superviviencia del modelo de Weibull ajustada para:\n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0",xlim=c(0,2500))
+plot(days2,survival,xlab="Curva de superviviencia del modelo de Weibull ajustada para:
+     \n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0",xlim=c(0,2500))
 
 ```
+
 Ambos parecen bastante similares. Comprobamos el valor de AIC para cada modelo.
 
 ```{r}
