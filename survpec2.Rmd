@@ -54,7 +54,7 @@ colnames(data) <- c("id", "age", "gender", "hr", "sysbp", "diasbp", "bmi", "cvd"
                     "admitdate", "disdate", "fdate", "los", "dstat", "lenfol", "fstat")
 ```
 
-Comprobamos la la distribución de seguimiento y estatus final por cohorte.
+Comprobamos la distribución de seguimiento y estatus final por cohorte.
 ```{r}
 boxplot(lenfol ~ year, data = data)
 table(data$year,data$fstat)
@@ -106,7 +106,7 @@ Representamos la función de supervivencia basal.
 ```{r}
 pattern <- data.frame(age_65=0, gender = 0, mitype = 0, miord = 0, hr_85 = 0, chf = 0)
 plot(survfit(modelo2, newdata=pattern), 
-     xlab = "Curva de superviviencia ajustada para:\n age_65 = 0, 
+     main = "Curva de superviviencia ajustada para:\n age_65 = 0, 
      gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
 
 ```
@@ -405,13 +405,13 @@ Y ahora comparamos gráficamente este con el modelo de Weibull obtenido anterior
 ```{r}
 pattern <- data.frame(age_65=0, gender = 0, chf = 0, diasbp = 0, hr_85 = 0, chf = 0, bmi =0)
 plot(survfit(modcox, newdata=pattern), 
-     xlab = "Curva de superviviencia del modelo de Cox ajustada para:
+     main = "Curva de superviviencia del modelo de Cox ajustada para:
      \n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0")
 
 pct2=0:100/100
 days2=predict(modpar2,newdata=pattern, type="quantile",p=pct2)
 survival=1-pct2
-plot(days2,survival,xlab="Curva de superviviencia del modelo de Weibull ajustada para:
+plot(days2,survival,main="Curva de superviviencia del modelo de Weibull ajustada para:
      \n age_65 = 0, gender = 0.5, mitype = 0, miord = 0, hr_85 = 0, chf = 0",xlim=c(0,2500))
 
 ```
